@@ -1,227 +1,73 @@
-# 🚀 Streamlit Travel Agent Setup Guide
+# AI Travel Agent
 
-## 📁 Project Structure (Updated)
+Streamlit assistant for travel research, weather, itineraries, cost breakdowns,
+currency calculations and YouTube searches using LangChain and LangGraph.
 
-```
-ai-travel-agent/
-├── app.py                    # 🆕 Main Streamlit application
-├── Assignment.ipynb          # Original Jupyter notebook  
-├── README.md                 # Project documentation
-├── requirements.txt          # 🔄 Updated dependencies (includes Streamlit)
-├── .env                     # Environment variables (keep local)
-├── .gitignore               # Git ignore file
-└── .streamlit/              # 🆕 Streamlit configuration (optional)
-    └── config.toml          # Custom Streamlit settings
-```
+## Local setup
 
-## 🔧 Setup Instructions
-
-### 1. **Create the Streamlit App File**
-
-Create `app.py` in your project folder and copy the code from the artifact above.
-
-### 2. **Update Requirements**
-
-Replace your `requirements.txt` with the updated version that includes Streamlit.
-
-### 3. **Verify Your .env File**
-
-Make sure your `.env` file contains:
-```env
-OPENAI_API_KEY=your_openai_api_key_here
-SERPER_API_KEY=your_serper_api_key_here  
-OPENWEATHERMAP_API_KEY=your_openweathermap_api_key_here
-```
-
-### 4. **Install Dependencies**
+Use Python 3.11 or later:
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env
+streamlit run streamlit_app.py
 ```
 
-## 🚀 Running Locally
+Windows activation: `.venv\Scripts\activate`.
+Fill in `.env` locally before requesting a plan:
 
-### **Method 1: Simple Run**
+| Credential | Purpose |
+| --- | --- |
+| `OPENAI_API_KEY` | Required for the `gpt-4o` model, with API billing/access. |
+| `SERPER_API_KEY` | Optional Google Serper search. DuckDuckGo is used without it. |
+| `OPENWEATHERMAP_API_KEY` | Required for current weather; missing weather is reported without it. |
+
+DuckDuckGo and YouTube require internet access and may have provider limits.
+Currency rates come from search, not a dedicated currency API. Verify rate
+freshness, prices and availability before booking. Current weather is not a
+forecast for future travel dates.
+
+Environment variables or `.streamlit/secrets.toml` can also supply these names.
+Streamlit secrets take precedence. Never commit real credentials or include them
+in chat or screenshots. `.env.example` contains blank placeholders only.
+For Streamlit Cloud, select `streamlit_app.py` as the entry point and add keys in
+the deployment's Secrets settings. Do not disable CORS or XSRF protections.
+
+## Security scope
+
+The active app no longer exposes a Python shell to the model. Four allowlisted
+arithmetic tools use validated numeric schemas. They accept decimals and reject
+code strings, booleans, nonfinite values, extra fields and operands outside
++/- 1 trillion. Zero division and nonfinite results fail explicitly.
+Python floating point is used for travel estimates, not accounting-grade math.
+The existing `substraction` tool name is preserved for compatibility.
+
+The experimental LangChain dependency is removed. Search, weather, video and
+itinerary tools remain. Raw provider exceptions are no longer displayed in the
+UI, and missing Streamlit secrets files allow environment-variable fallback.
+Historical notebooks are not the hardened entry point.
+
+This change does not certify all dependencies, prompt injection defenses or a
+live deployment. If a key was previously published, revoke/rotate it with the
+provider. Ignore rules do not remove secrets from Git history.
+
+## Tests and release verification
+
+Credential-free tests:
+
 ```bash
-streamlit run app.py
+python -m unittest discover -s tests -v
+python -m py_compile streamlit_app.py calculations.py
 ```
 
-### **Method 2: Custom Port**
-```bash
-streamlit run app.py --server.port 8080
-```
+Tests cover decimal costs, currency multiplication, invalid/code operands,
+extra fields, zero division, overflow and the app's tool allowlist.
+They do not call external services.
 
-### **Method 3: Development Mode**
-```bash
-streamlit run app.py --server.runOnSave true
-```
-
-Your app will open automatically in your browser at `http://localhost:8501`
-
-## 🌐 Deployment Options
-
-### **Option 1: Streamlit Community Cloud (FREE & RECOMMENDED)**
-
-1. **Push to GitHub** (make sure your code is on GitHub)
-2. **Go to [share.streamlit.io](https://share.streamlit.io)**
-3. **Connect your GitHub account**
-4. **Deploy your repository:**
-   - Repository: `your-username/ai-travel-agent`
-   - Branch: `main`
-   - Main file path: `app.py`
-5. **Add secrets** in Streamlit Cloud dashboard:
-   - Go to "Manage app" → "Secrets"
-   - Add your API keys:
-   ```toml
-   OPENAI_API_KEY = "your_key_here"
-   SERPER_API_KEY = "your_key_here"  
-   OPENWEATHERMAP_API_KEY = "your_key_here"
-   ```
-
-**Your app will be live at:** `https://your-app-name.streamlit.app`
-
-### **Option 2: Heroku**
-
-1. **Create `Procfile`:**
-```
-web: sh setup.sh && streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
-```
-
-2. **Create `setup.sh`:**
-```bash
-mkdir -p ~/.streamlit/
-echo "\
-[server]\n\
-headless = true\n\
-port = $PORT\n\
-enableCORS = false\n\
-\n\
-" > ~/.streamlit/config.toml
-```
-
-3. **Deploy to Heroku:**
-```bash
-heroku create your-travel-agent-app
-git push heroku main
-heroku config:set OPENAI_API_KEY=your_key_here
-heroku config:set SERPER_API_KEY=your_key_here
-heroku config:set OPENWEATHERMAP_API_KEY=your_key_here
-```
-
-### **Option 3: Railway**
-
-1. **Connect your GitHub repository**
-2. **Add environment variables** in Railway dashboard
-3. **Deploy automatically**
-
-## 🎨 Optional: Custom Streamlit Configuration
-
-Create `.streamlit/config.toml`:
-
-```toml
-[theme]
-primaryColor = "#667eea"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f0f2f6"
-textColor = "#262730"
-
-[server]
-runOnSave = true
-```
-
-## 🧪 Testing Your App
-
-### **Test Locally:**
-1. Run `streamlit run app.py`
-2. Try different example queries
-3. Verify all tools are working
-
-### **Test Features:**
-- ✅ Weather information displays
-- ✅ Search results appear
-- ✅ Calculations work correctly
-- ✅ YouTube videos load
-- ✅ Currency conversion functions
-- ✅ Cost breakdown is accurate
-
-## 📱 Mobile Responsiveness
-
-Your Streamlit app is automatically mobile-responsive! Users can access it on:
-- 💻 Desktop computers
-- 📱 Mobile phones  
-- 📟 Tablets
-
-## 🔒 Security Best Practices
-
-### **For Production:**
-1. **Never commit API keys** to GitHub
-2. **Use Streamlit Secrets** for deployment
-3. **Add rate limiting** if needed
-4. **Monitor API usage** to avoid overages
-
-### **Environment Variables:**
-```python
-# In app.py - already handled
-import os
-from dotenv import load_dotenv
-load_dotenv()
-
-# API keys loaded securely
-openai_key = os.getenv("OPENAI_API_KEY")
-```
-
-## 🐛 Troubleshooting
-
-### **Common Issues:**
-
-**"ModuleNotFoundError"**
-```bash
-pip install -r requirements.txt
-```
-
-**"API Key Error"**
-- Check your `.env` file
-- Verify API keys are correct
-- Ensure no extra spaces in API keys
-
-**"Streamlit Command Not Found"**
-```bash
-pip install streamlit
-```
-
-**"Port Already in Use"**
-```bash
-streamlit run app.py --server.port 8502
-```
-
-## 📈 Performance Tips
-
-1. **Cache API calls** using `@st.cache_data`
-2. **Use session state** for expensive operations
-3. **Optimize large responses** with pagination
-4. **Add loading indicators** for better UX
-
-## 🎯 Next Steps
-
-1. **✅ Create the Streamlit app**
-2. **✅ Test locally**  
-3. **✅ Deploy to Streamlit Cloud**
-4. **✅ Share your live app link!**
-
-## 🌟 Features in Your Streamlit App
-
-- **🎨 Beautiful UI** with custom styling
-- **📱 Mobile responsive** design
-- **🔄 Real-time processing** with loading indicators
-- **📊 Interactive components** (selectboxes, buttons, metrics)
-- **💾 Session state** for chat history
-- **🎯 Example queries** for easy testing
-- **📈 API status monitoring**
-- **🎥 Embedded YouTube videos**
-
----
-
-**Your travel agent is now a full-featured web application! 🎉**
-
-**Live Demo:** `https://your-app-name.streamlit.app` (after deployment)
-
+Before release, install dependencies in a clean environment and test the UI
+with valid credentials. Check weather, Google search, DuckDuckGo without Serper,
+YouTube links, decimal budgets, currency conversion, missing keys and provider
+failures. Model tool selection, live responses and deployment behavior require
+separate verification.
